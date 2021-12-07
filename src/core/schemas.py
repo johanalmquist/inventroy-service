@@ -29,7 +29,7 @@ class DeviceCreate(DeviceBase):
     site_id: int
 
 
-class Device(DeviceBase):
+class Device(DeviceCreate):
     id: int
 
     class Config:
