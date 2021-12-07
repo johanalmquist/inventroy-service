@@ -18,6 +18,10 @@ async def create(site: schemas.SiteCreate, db: Session):
     return db_site
 
 
+async def find(id: int, db: Session):
+    return db.query(models.Site).filter(models.Site.id == id).first()
+
+
 async def find_by_name(name: str, db: Session):
     db_site = db.query(models.Site).filter(models.Site.name == name).first()
     return db_site
