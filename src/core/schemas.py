@@ -32,6 +32,9 @@ class DeviceCreate(DeviceBase):
 class Device(DeviceBase):
     id: int
 
+    class Config:
+        orm_mode = True
+
 
 class Site(SiteBase):
     id: int
