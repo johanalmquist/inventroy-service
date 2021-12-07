@@ -1,30 +1,36 @@
 from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy import or_
 from sqlalchemy.orm import Session
 
-from ..core import models, schemas
+from ..core import schemas
 from ..core.database import get_database
+from ..crud import device, site
 
 router = APIRouter(prefix="/devices", tags=["devices"])
 
 
-@router.post("/")
-async def list_devices(
-    device: schemas.DeviceCreate, db: Session = Depends(get_database)
+@router.post("/", response_model=schemas.Device)
+async def create_device(
+    deviceData: schemas.DeviceCreate, db: Session = Depends(get_database)
 ):
-    db_device = models.Device(
-        name=device.name,
-        type=device.type,
-        serial_number=device.serial_number,
-        mac_address=device.mac_address,
-        site_id=device.site_id,
-    )
-    db.add(db_device)
-    db.commit()
-    db.refresh(db_device)
-    return db_device
+    if await device.find_by_serial(deviceData.serial_number, db):
+        raise HTTPException(
+            status_code=400,
+            detail=f"A device with serial number {deviceData.serial_number} already exists!",
+        )
+    if await device.find_by_mac(deviceData.mac_address, db):
+        raise HTTPException(
+            status_code=400,
+            detail=f"A device with serial number {deviceData.mac_address} already exists!",
+        )
+
+    if await site.find(deviceData.site_id, db=db) is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Site not found!",
+        )
+    return await device.create(device=deviceData, db=db)
 
 
 @router.get("/device", response_model=schemas.Device)
@@ -34,9 +40,9 @@ async def view_device(
     db: Session = Depends(get_database),
 ):
     if serial and mac_address is None:
-        q = serial
+        db_device = await device.find_by_serial(serial=serial, db=db)
     if mac_address and serial is None:
-        q = mac_address
+        db_device = await device.find_by_mac(mac=mac_address, db=db)
     if serial and mac_address is not None:
         return "Will come soon"
     if serial is None and mac_address is None:
@@ -44,11 +50,6 @@ async def view_device(
             status_code=422, detail="Pleace enter a serial or mac address"
         )
 
-    device = (
-        db.query(models.Device).filter(
-            or_(models.Device.serial_number == q, models.Device.mac_address == q)
-        )
-    ).first()
-    if device is None:
+    if db_device is None:
         raise HTTPException(status_code=404, detail="Device not found!")
-    return device
+    return db_device
