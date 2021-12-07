@@ -38,7 +38,7 @@ class Device(DeviceBase):
 
 class Site(SiteBase):
     id: int
-    devices: List[Device] = []
+    has: List[Device] = []
 
     class Config:
         orm_mode = True

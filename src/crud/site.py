@@ -19,4 +19,9 @@ async def create(site: schemas.SiteCreate, db: Session):
 
 
 async def find_by_name(name: str, db: Session):
-    return db.query(models.Site).filter(models.Site.name == name).first()
+    db_site = db.query(models.Site).filter(models.Site.name == name).first()
+    return db_site
+
+
+async def get_all(db: Session):
+    return db.query(models.Site).all()
